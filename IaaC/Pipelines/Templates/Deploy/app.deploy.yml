@@ -1,0 +1,172 @@
+jobs:
+  - deployment: Base
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Initialize & Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+  - deployment: Database
+    dependsOn:
+    - Base
+    condition: succeeded('Base')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+
+          - task: SqlAzureDacpacDeployment@1
+            displayName: 'Azure Database Deploy'
+            inputs:              
+              azureSubscription: ${{parameters.serviceConnection}}
+              ServerName: '$(sqlServerName).database.windows.net'
+              DatabaseName: '$(sqlDbprodName)'
+              SqlUsername: '$(sqlAdminLoginId)'
+              SqlPassword: '$(sqlAdminLoginPassword)'
+              DacpacFile: '$(agent.builddirectory)\$(appArtifactsFolder)\DevopsDatabase\DevopsDatabase.dacpac'
+              AdditionalArguments: '/p:BlockOnPossibleDataLoss=False /p:CommandTimeout=600'  
+            continueOnError: true  
+          
+
+  - deployment: FunctionApp
+    dependsOn:
+    - Base
+    condition: succeeded('Base')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+          - task: AzureRmWebAppDeployment@4
+            displayName: "Azure Function App Deploy"
+            inputs:
+              ConnectionType: AzureRM
+              azureSubscription: ${{parameters.serviceConnection}}
+              appType: functionApp
+              WebAppName: '$(funcDevOpsApp)'
+              Package: '$(agent.builddirectory)\$(appArtifactsFolder)\DevOpsFunctionApp\DevOpsFunctionApp.zip'
+            continueOnError: true
+
+          - task: AzureAppServiceSettings@1
+            displayName: "Function App Setting for DevOpsFunction solution "
+            inputs:
+              azureSubscription: ${{parameters.serviceConnection}}
+              appName: '$(funcDevOpsApp)'
+              appSettings :  |
+                [
+                  {
+                    "name" : "queuename" ,
+                    "value" : "$(storageQueueName)" ,
+                    "slotSetting" : false
+                  }                   
+                ]
+            continueOnError: true
+   
+  - deployment: SetKeyVaultVariables
+    dependsOn:
+    - Base   
+    condition: succeeded('Base')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+          
+          - task: AzureCLI@2
+            displayName: Setting KeyVault Values 
+            inputs:
+                azureSubscription: ${{parameters.serviceConnection}}
+                scriptType: ps
+                scriptLocation: inlineScript
+                inlineScript: | 
+                  $sqlconSecretValue =  "Server=tcp:$(sqlServerName).database.windows.net,1433;Initial Catalog=$(sqlDbprodName);Persist Security Info=False;User ID=$(sqlAdminLoginId);Password=$(sqlAdminLoginPassword);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+                  az keyvault secret set --vault-name "$(keyVaultName)" --name "$(keyVaultSqlConnName)" --value $sqlconSecretValue
+
+
+  - deployment: WebApps
+    dependsOn:
+    - Base   
+    condition: succeeded('Base')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+          
+          - task: AzureCLI@2
+            displayName: Set WebConfig Variables for DevOpsWebApp
+            inputs:
+                azureSubscription: ${{parameters.serviceConnection}}
+                scriptType: ps
+                scriptLocation: inlineScript
+                addSpnToEnvironment : true 
+                inlineScript: |
+                  $sqlConnectionSecretIdentifier = (az keyvault secret show --name "$(keyVaultSqlConnName)" --vault-name "$(keyVaultName)" | ConvertFrom-Json ).id
+                  Write-Host "##vso[task.setvariable variable=SqlConnectionSecretIdentifier]$sqlConnectionSecretIdentifier"
+
+                  $storageconnectionString = ( az storage account show-connection-string  -g "$(resourceGroupDevOps)" -n "$(storageAccountNameApp)" | ConvertFrom-Json ).connectionString
+                  Write-Host "##vso[task.setvariable variable=StorageConnectionString]$storageconnectionString"
+    
+                  $queueName = "$(storageQueueName)"
+                  Write-Host "##vso[task.setvariable variable=QueueName]$queueName"
+
+                  $clientID = "$env:servicePrincipalId"
+                  Write-Host "##vso[task.setvariable variable=ClientID]$clientID"
+
+                  $clientSecret = "$env:servicePrincipalKey"
+                  Write-Host "##vso[task.setvariable variable=ClientSecret]$clientSecret"
+            continueOnError: true
+
+          - task: AzureRmWebAppDeployment@4
+            displayName: "Azure Web App Deploy - DevOpsWebApp"
+            inputs:
+              ConnectionType: AzureRM
+              azureSubscription: ${{parameters.serviceConnection}}
+              WebAppName: '$(webAppName)'
+              Package: '$(agent.builddirectory)\$(appArtifactsFolder)\DevOpsWebApp\DevOpsWebApp.zip'
+              appType: "webApp"              
+              enableXmlVariableSubstitution: true
+            continueOnError: true
+
+           
+
+
+ 

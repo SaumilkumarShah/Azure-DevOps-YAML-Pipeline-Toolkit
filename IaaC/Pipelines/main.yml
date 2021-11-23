@@ -1,0 +1,84 @@
+variables:
+  - template: /IaaC/Pipelines/Templates/Variables/package.yml
+  - template: /IaaC/Pipelines/Templates/Variables/tags.yml
+  - template: /IaaC/Pipelines/Templates/Variables/infra.yml
+
+trigger: none
+pr: none
+
+stages:
+  - stage: Startup
+    jobs:
+    - job: Initialize
+      pool:
+        vmImage: 'windows-latest'
+      steps:
+      - script: echo 'Initialisation completed'
+
+  - stage: Build_Infra_Artifacts
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/infra.build.yml
+    dependsOn:
+    - Startup
+    condition: succeeded('Startup')
+
+  - stage: Build_App_Artifacts
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/app.build.yml
+    dependsOn:
+    - Startup
+    condition: succeeded('Startup')
+
+  - stage: Deploy_Dev_Infra
+    variables:
+      - group: prashantDev
+      - template: /IaaC/Pipelines/Templates/Variables/dev.yml
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/infra.deploy.yml
+        parameters:
+          env: ${{ variables.env }}
+          serviceConnection: ${{ variables.serviceConnection }}
+    dependsOn:
+    - Build_Infra_Artifacts
+    condition: succeeded('Build_Infra_Artifacts')
+
+  - stage: Deploy_Dev_App
+    variables:
+      - group: prashantDev
+      - template: /IaaC/Pipelines/Templates/Variables/dev.yml
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/app.deploy.yml
+        parameters:
+          env: ${{ variables.env }}
+          serviceConnection: ${{ variables.serviceConnection }}
+    dependsOn:
+    - Build_App_Artifacts
+    - Deploy_Dev_Infra
+    condition: and(succeeded('Deploy_Dev_Infra'), succeeded('Build_App_Artifacts')) 
+ 
+  - stage: Deploy_Prod_Infra
+    variables:
+      - group: prashantProd
+      - template: /IaaC/Pipelines/Templates/Variables/prod.yml
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/infra.deploy.yml
+        parameters:
+          env: ${{ variables.env }}
+          serviceConnection: ${{ variables.serviceConnection }}
+    dependsOn:
+    - Deploy_Dev_App
+    condition: succeeded('Deploy_Dev_App')
+
+  - stage: Deploy_Prod_App
+    variables:
+      - group: prashantProd
+      - template: /IaaC/Pipelines/Templates/Variables/prod.yml
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/app.deploy.yml
+        parameters:
+          env: ${{ variables.env }}
+          serviceConnection: ${{ variables.serviceConnection }}
+    dependsOn:
+    - Deploy_Prod_Infra
+    condition: succeeded('Deploy_Prod_Infra')
+ 

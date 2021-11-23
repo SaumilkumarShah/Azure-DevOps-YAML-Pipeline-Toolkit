@@ -1,0 +1,18 @@
+steps:
+ - task: AzureResourceGroupDeployment@2
+   displayName: Sql Server - ARM
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     resourceGroupName: "${{ parameters.resourceGroupName }}"
+     location: "${{ parameters.deployLocation }}"
+     csmFile: '$(Agent.BuildDirectory)/Drop/Templates/Sql Server/deploy.json'
+     overrideParameters: '-sqlServerNameStorageAccountName "${{ parameters.sqlServerNameStorageAccountName }}" -sqlServerName "${{ parameters.sqlServerName }}" -sqlAdministratorLogin "${{ parameters.sqlAdministratorLogin }}" -sqlAdministratorLoginPassword "${{ parameters.sqlAdminLoginPassword }}"'
+     deploymentOutputs: armOut
+
+ - task: AzurePowerShell@4
+   displayName: Add tags to Sql Server
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Add-Tags.ps1'
+     ScriptArguments: '-resourceType "Primary" -resourcePurpose "" -componentID "${{ parameters.componentID }}" -subEnvironment "${{ parameters.subEnvironment }}" -resourceGroupName "${{ parameters.resourceGroupName }}" -resourceName "${{ parameters.sqlServerName }}"'
+     azurePowerShellVersion: LatestVersion

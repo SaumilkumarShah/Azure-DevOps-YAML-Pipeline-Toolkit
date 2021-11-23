@@ -1,0 +1,4 @@
+jobs:
+ - template: ../Deploy/infra.build.yml
+   parameters:
+      infra: 'true'

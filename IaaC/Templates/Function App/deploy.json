@@ -1,0 +1,92 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "functionappsiteName": {
+            "type": "string",
+            "metadata": {
+                "description": "Enter the Function App Name"
+            }
+        },
+        "functionappServicePlanName": {
+            "type": "string",
+            "metadata": {
+                "description": "Enter the Function App Service Plan Name"
+            }
+        },
+        "functionstorageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Enter the Storage Account Name"
+            }
+        }
+    },
+    "variables": {
+    },
+    "resources": [
+        {
+            "name": "[parameters('functionappServicePlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2018-02-01",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 0
+            },
+            "kind": "functionapp",
+            "properties": {
+                "perSiteScaling": false,
+                "maximumElasticWorkerCount": 1,
+                "isSpot": false,
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "targetWorkerCount": 0,
+                "targetWorkerSizeId": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('functionappServicePlanName'))]"
+            ],
+            "name": "[parameters('functionappsiteName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "functionapp",
+            "properties": {
+                "name": "[parameters('functionappsiteName')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "StorageConnectionAppSetting",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('functionstorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('functionstorageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('functionstorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('functionstorageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[concat(toLower(parameters('functionappsiteName')), 'ba9f')]"
+                        }
+                    ],
+                    "use32BitWorkerProcess": true
+                },
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionappServicePlanName'))]",
+                "clientAffinityEnabled": false
+            }
+        }
+    ]
+}

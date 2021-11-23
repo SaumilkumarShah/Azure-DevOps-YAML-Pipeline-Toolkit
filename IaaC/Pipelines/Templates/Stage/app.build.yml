@@ -1,0 +1,5 @@
+jobs:
+ - template: ../Deploy/app.build.yml
+   parameters:
+      app: 'true'
+   

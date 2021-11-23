@@ -1,0 +1,32 @@
+﻿variables:
+  #CLEANUP SECTION VARIABLES 
+- name : resourceGroupNamesForCleanup
+  value: 'rg-qrs-prod-devops-001'
+
+# COMON ENV. VARIABLES
+- name: serviceConnection
+  value: 'prashant-qrs-subscription-dev'
+- name: storageAccountKind
+  value: 'Standard_LRS'
+- name: env
+  value: 'prod'
+- name: region
+  value: 'East US'
+- name: regionShortName
+  value: 'eus'
+- name: regionlocation
+  value: 'eastus'
+- name: keyVaultSku
+  value: 'Premium'
+- name: appServicePlanSku
+  value: 'P1'
+- name: apiAppServicePlanSku
+  value: 'P1'
+- name: sqlElasticPoolEdition
+  value: 'Premium'
+- name: sqlElasticPoolCapacity
+  value: 125
+- name: sqlDbSkuTier
+  value: "Premium"
+- name: funcspsku
+  value: 'P1'

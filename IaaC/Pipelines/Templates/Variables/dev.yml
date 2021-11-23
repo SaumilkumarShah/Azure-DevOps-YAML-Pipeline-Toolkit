@@ -1,0 +1,32 @@
+variables:
+  #CLEANUP SECTION VARIABLES 
+- name : resourceGroupNamesForCleanup
+  value: 'rg-qrs-dev-devops-001'
+
+# COMMON ENV. VARIABLES
+- name: serviceConnection
+  value: 'prashant-qrs-subscription-dev'
+- name: storageAccountKind
+  value: 'Standard_LRS'
+- name: env
+  value: 'dev'
+- name: region
+  value: 'East US'
+- name: regionShortName
+  value: 'eus'
+- name: regionlocation
+  value: 'eastus'
+- name: keyVaultSku
+  value: 'Standard'
+- name: appServicePlanSku
+  value: 'S1'
+- name: apiAppServicePlanSku
+  value: 'S1'
+- name: sqlElasticPoolEdition
+  value: 'Standard'
+- name: sqlElasticPoolCapacity
+  value: 50
+- name: sqlDbSkuTier
+  value: "Standard"
+- name: funcspsku
+  value: 'S1'

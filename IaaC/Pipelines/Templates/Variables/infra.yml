@@ -1,0 +1,47 @@
+variables: 
+- name: deployLocation
+  value: $(region)
+- name: locationShortName
+  value: $(regionShortName)
+- name: regionShortName
+  value: $(regionlocation)
+- name: prefix
+  value: 'qrs'
+- name: companyName
+  value: '${{ variables.prefix }}-devops'
+- name: rgprefix
+  value: 'rg-${{ variables.prefix }}'
+- name: 'environmentName'
+  value: '$(env)'
+- name: suffix
+  value: '$(env)-$(sequence)'
+- name: resourceGroupDevOps
+  value: '$(rgprefix)-$(env)-devops-$(sequence)'
+- name: storageAccountNameApp
+  value: '${{ variables.prefix }}stapp$(env)$(sequence)'
+- name: storageQueueName
+  value: '${{ variables.prefix }}devopsqueue$(env)'
+- name: keyVaultName
+  value: '${{ variables.prefix }}-kv-sec-${{ variables.suffix }}'
+- name:  keyVaultSqlConnName
+  value: kvsecSqlConn$(env)
+- name: environmentType
+  value: '$(env)'
+- name: webAppName
+  value: '${{ variables.prefix }}appweb$(env)'
+- name: appServicePlanName
+  value: '${{ variables.prefix }}-app-serviceplan-${{ variables.suffix }}'
+- name: searchServiceName
+  value: '${{ variables.prefix }}-srch-${{ variables.suffix }}'
+- name: sqlServerName
+  value: '${{ variables.prefix }}-sql-${{ variables.suffix }}'
+- name: sqlElasticPoolName
+  value: '${{ variables.prefix }}-sql-ep-${{ variables.suffix }}'
+- name: sqlDbprodName
+  value: '${{ variables.prefix }}-sqldb-${{ variables.suffix }}'
+- name: webappappinsightname
+  value: '${{ variables.prefix }}-app-appi-${{ variables.suffix }}'
+- name: funcDevOpsApp
+  value: '${{ variables.prefix }}-func-devopsapp-${{ variables.suffix }}'
+- name: funcSPDevOpsApp
+  value: '${{ variables.prefix }}-func-devopsappSP-${{ variables.suffix }}'

@@ -1,0 +1,59 @@
+﻿jobs:
+   
+  - job: BuildAppArtifacts
+    pool:
+     vmImage: 'windows-latest'
+    steps:
+    
+    - task: NuGetToolInstaller@1
+      displayName: Install Nuget Tools 
+      condition: and(succeeded(), eq('${{parameters.app}}', 'true'))
+
+    - task: NuGetCommand@2
+      displayName: Restore NugetPkg on solution 
+      inputs:
+        restoreSolution: '**/*.sln'
+      condition: and(succeeded(), eq('${{parameters.app}}', 'true'))
+
+    - task: MSBuild@1
+      displayName: 'Build App Database'
+      inputs:
+        solution: '$(Build.SourcesDirectory)/$(appSolutionPath)/DevopsDatabase/DevopsDatabase.sqlproj'
+      condition: and(succeeded(), eq('${{parameters.app}}', 'true'))
+
+    - task: CopyFiles@2
+      displayName: 'extract Database dacpac '
+      inputs:
+          CleanTargetFolder: false
+          SourceFolder: '$(Build.SourcesDirectory)/$(appSolutionPath)\DevopsDatabase\bin\Debug\'
+          Contents: '*.dacpac'
+          TargetFolder: '$(build.artifactstagingdirectory)\DevopsDatabase'
+      condition: and(succeeded(), eq('${{parameters.app}}', 'true'))
+   
+
+    - task: VSBuild@1
+      displayName: Build AppFunctions
+      inputs:
+        solution: '$(Build.SourcesDirectory)/$(appSolutionPath)/DevOpsFunctionApp/DevOpsFunctionApp.csproj'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\DevOpsFunctionApp\DevOpsFunctionApp.zip" /p:DeployIisAppPath="Default Web Site"'
+        vsVersion: 'latest'
+        platform: 'AnyCPU'
+        configuration: 'Release'
+      condition: and(succeeded(), eq('${{parameters.app}}', 'true'))
+
+    - task: VSBuild@1
+      displayName: Build App Web 
+      inputs:
+        solution: '$(Build.SourcesDirectory)/$(appSolutionPath)/DevOpsWebApp/DevOpsWebApp.csproj'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\DevOpsWebApp\DevOpsWebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+        platform: 'AnyCPU'
+        configuration: 'Release'
+      condition: and(succeeded(), eq('${{parameters.app}}', 'true'))
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'PublishBuildArtifacts'
+      inputs:
+        targetpath: '$(build.artifactstagingdirectory)'
+        artifactName: $(appArtifactsFolder)
+
+

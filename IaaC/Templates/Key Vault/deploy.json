@@ -1,0 +1,74 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "accessPolicies":{
+        "type": "object"
+      },
+      "keyVaultName": {
+        "type": "string",
+        "minLength": 1,
+        "metadata": {
+          "description": "Name of key vault"
+        }
+      },      
+      "skuName": {
+        "type": "string",
+        "minLength": 1,
+        "defaultValue": "Standard",
+        "metadata": {
+          "description": "SKU name e.g. Standard"
+        }        
+      },
+      "secretName": {
+        "type": "string",
+        "metadata": {
+        "description": "Specifies the name of the secret that you want to create."
+        }
+      },
+      "secretValue": {
+        "type": "securestring",
+        "metadata": {
+          "description": "Specifies the value of the secret that you want to create."
+        }
+      }
+    },
+    "variables": {
+      "location": "[resourceGroup().location]"
+    },
+    "resources": [
+      {
+        "name": "[parameters('keyVaultName')]",
+        "comments": "Creates key vault for self service",
+        "type": "Microsoft.KeyVault/vaults",
+        "apiVersion": "2016-10-01",
+        "location": "[variables('location')]",
+        "properties": {
+          "tenantId": "[subscription().tenantId]",
+          "sku": {
+            "family": "A",
+            "name": "[parameters('skuName')]"
+          },
+          "accessPolicies": "[parameters('accessPolicies').list]",
+          "enabledForDeployment": false,
+          "enabledForDiskEncryption": false,
+          "enabledForTemplateDeployment": false
+        },
+        "resources": []
+      },
+      {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2016-10-01",
+      "name": "[concat(parameters('keyVaultName'), '/', parameters('secretName'))]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+      ],
+      "properties": {
+        // "value": "[parameters('secretValue')]"
+          "value": "[concat('P', uniqueString(resourceGroup().id, deployment().name, '63dc3376-3ce3-4f16-bbe1-b398d0d25dfe'), '!')]"  //random value
+
+      }
+    }
+    ]
+  }

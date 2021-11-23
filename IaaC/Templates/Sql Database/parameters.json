@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "sqlservername": {
+        "value": "qrssqldeveus001"
+      },
+      "sqlElasticPoolName": {
+        "value": "qrssqlepdeveus001"
+      },
+      "collation": {
+        "value": "SQL_Latin1_General_CP1_CI_AS"
+      },
+      "resourcelocation": {
+        "value": "East US"
+      },
+      "skutier": {
+        "value": "Basic"
+      },
+      "zoneRedundant": {
+        "value": false
+      },
+      "databaseName": {
+        "value": "value"
+      }
+    }
+  }

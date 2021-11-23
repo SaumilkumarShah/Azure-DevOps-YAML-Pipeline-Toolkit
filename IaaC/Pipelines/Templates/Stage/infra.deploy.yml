@@ -1,0 +1,5 @@
+jobs:
+ - template: ../Deploy/infra.deploy.yml
+   parameters:
+     env: ${{parameters.env}}
+     serviceConnection : ${{parameters.serviceConnection}}

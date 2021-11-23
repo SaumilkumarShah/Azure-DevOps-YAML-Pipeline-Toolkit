@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "webAppName": {
+      "value": "qrsappweb",
+      "metadata": {
+        "description": "Describes the admin app to be created"
+      }
+    },
+    "adminAppName": {
+      "value": "qrsappadmin",
+      "metadata": {
+        "description": "Describes the admin app to be created"
+      }
+    },
+    "appServicePlanName": {
+      "value": "qrsAppSP"
+    },
+    "appServicePlanSku": {
+      "value": "P1",
+      "metadata": {
+        "description": "Describes plan's pricing tier and capacity."
+      }
+    }
+  }
+}

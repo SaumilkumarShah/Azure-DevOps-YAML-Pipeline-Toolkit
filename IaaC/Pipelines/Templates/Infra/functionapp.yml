@@ -1,0 +1,18 @@
+steps:
+ - task: AzureResourceGroupDeployment@2
+   displayName: Function App - ARM funcDevOpsApp
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     resourceGroupName: "${{ parameters.resourceGroupName }}"
+     location: "${{ parameters.deployLocation }}"
+     csmFile: '$(Agent.BuildDirectory)/Drop/Templates/Function App/deploy.json'
+     overrideParameters: '-functionappsiteName "${{ parameters.funcDevOpsApp }}" -functionappServicePlanName "${{ parameters.funcSPDevOpsApp }}" -functionstorageAccountName "${{parameters.functionstorageAccountName}}"'
+     deploymentOutputs: armOut
+
+ - task: AzurePowerShell@4
+   displayName: Add tags to Function App funcDevOpsApp
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Add-Tags.ps1'
+     ScriptArguments: '-resourceType "Primary" -resourcePurpose "" -componentID "${{ parameters.componentID }}" -subEnvironment "${{ parameters.subEnvironment }}" -resourceGroupName "${{ parameters.resourceGroupName }}" -resourceName "${{ parameters.funcDevOpsApp }}"'
+     azurePowerShellVersion: LatestVersion

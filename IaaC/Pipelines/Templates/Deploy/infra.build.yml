@@ -1,0 +1,30 @@
+﻿jobs:
+  - job: Build
+    pool:
+     vmImage: 'windows-latest'
+    steps:
+    - task: CopyFiles@2
+      displayName: COPY ARM templates
+      inputs:
+          SourceFolder: $(Build.SourcesDirectory)/$(infraTemplatePath)
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/Templates'
+      condition: and(succeeded(), eq('${{parameters.infra}}', 'true'))
+
+    - task: CopyFiles@2
+      displayName: COPY Scripts
+      inputs:
+          SourceFolder:  $(Build.SourcesDirectory)/$(infraScriptPath)
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/Scripts'
+      condition: succeeded()
+
+    - task: PowerShell@2
+      displayName: Powershell Scripts
+      inputs:
+        targetType: 'filePath' 
+        filePath: '$(Build.ArtifactStagingDirectory)/Scripts/Run-PowershellScriptAnalyzer.ps1' 
+        arguments: '-FilePath "$(System.ArtifactsDirectory)\Scripts"' 
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifacts
+      inputs:
+          ArtifactName: Drop

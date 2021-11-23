@@ -1,0 +1,47 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "webappappinsightname": {
+            "type": "string",
+            "metadata": {
+                "description": "Application Insights app name"
+            }
+        },
+        "requestSource": {
+            "type": "string",
+            "metadata": {
+                "description": "Source of Azure Resource Manager deployment for app insights"
+            },
+            "defaultValue": "IbizaAIExtension"
+        },
+        "retentionInDays": {
+            "type": "string",
+            "metadata": {
+                "description": "Retention In Days"
+            },
+            "defaultValue": "90"
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('webappappinsightname')]",
+            "type": "Microsoft.Insights/components",
+            "apiVersion": "2015-05-01",
+            "location": "[resourceGroup().location]",
+            "kind": "web",
+            "properties": {
+                "applicationId": "[parameters('webappappinsightname')]",
+                "application_Type": "web",
+                "Request_Source": "[parameters('requestSource')]",
+                "RetentionInDays": "[parameters('retentionInDays')]",
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+            }
+        }
+    ],
+    "outputs": {
+    }
+}

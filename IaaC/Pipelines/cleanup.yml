@@ -1,0 +1,41 @@
+variables:
+  - template: /IaaC/Pipelines/Templates/Variables/package.yml
+  - template: /IaaC/Pipelines/Templates/Variables/infra.yml  
+
+trigger: none
+pr: none
+
+stages:
+  - stage: Startup
+    jobs:
+    - job: Initialize
+      pool:
+        vmImage: 'windows-latest'
+      steps:
+      - script: echo 'Initialisation completed'
+
+  - stage: Cleanup_Dev_Infra
+    variables:
+      - template: /IaaC/Pipelines/Templates/Variables/dev.yml
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/infra.cleanup.yml
+        parameters:
+          env: ${{ variables.env }}
+          serviceConnection: ${{ variables.serviceConnection }}
+    dependsOn:
+    - Startup
+    condition: succeeded('Startup')
+  
+  - stage: Cleanup_Prod_Infra
+    variables:
+      - template: /IaaC/Pipelines/Templates/Variables/prod.yml
+    jobs:
+      - template: /IaaC/Pipelines/Templates/Stage/infra.cleanup.yml
+        parameters:
+          env: ${{ variables.env }}
+          serviceConnection: ${{ variables.serviceConnection }}                 
+    dependsOn:
+    - Cleanup_Dev_Infra
+    condition: succeeded('Cleanup_Dev_Infra')
+
+ 

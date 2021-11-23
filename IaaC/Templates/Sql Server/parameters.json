@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlservername": {
+      "value": "sql-qrstest"
+    },
+    "sqlAdministratorLogin": {
+      "value": "sqladmin"
+    },
+    "sqlAdministratorLoginPassword": {      
+        "reference": {
+          "keyVault": {
+            "id": "/subscriptions/prashant-qrs-subscription-dev/resourceGroups/rg-qrs-test-sec-001/providers/Microsoft.KeyVault/vaults/qrs-kv-sec-test-001"
+          },
+          "secretName": "sqlAdminPassword"
+        }     
+    },
+    "firewallIpAddresses": {
+      "value": [
+        {
+          "start": "0.0.0.0",
+          "end": "0.0.0.0",
+          "clientName": "Test1"
+        }
+      ]
+    },
+    "resourcelocation": {
+      "value": "East US"
+    },
+    "allowAzureIps": {
+      "value": true
+    },
+    "enableADS": {
+      "value": true
+    },
+    "connectionPolicyType": {
+      "value": "Default"
+    },
+    "publicNetworkAccess": {
+      "value": "Enabled"
+    },
+    "sqlServerNameStorageAccountName": {
+      "value": "sqlstqrs"
+    }
+  }
+}

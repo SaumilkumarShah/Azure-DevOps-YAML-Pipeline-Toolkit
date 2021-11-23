@@ -1,0 +1,280 @@
+jobs:
+  - deployment: Base
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+          - task: AzureCLI@2
+            displayName: 'Azure CLI '
+            inputs:
+              azureSubscription: '${{parameters.serviceConnection}}'
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: 'az group create -l $(regionlocation) -n $(resourceGroupDevOps)'
+              
+          - template: ../Infra/addResourceGroupTags.yml
+            parameters:
+              azureSubscriptionName: '${{parameters.serviceConnection}}'
+              resourceGroupName: '$(resourceGroupDevOps)'
+              componentID: '$(componentID)'  
+
+          - template: ../Infra/keyVault.yml
+            parameters:
+              azureSubscriptionName: '${{parameters.serviceConnection}}'
+              resourceGroupName: '$(resourceGroupDevOps)'
+              deployLocation: '$(deployLocation)'
+              keyVaultName: '$(keyVaultName)'
+              skuName: '$(keyVaultSku)'
+              componentID: '$(componentID)'
+              subEnvironment: '$(subEnvironment)'
+              keyvaultSecrets: 
+                 - secretName: '$(kvsecVariableName1)' # kv1Name1
+                   secretValue: '<secretvalueOverriddenInTemplate>'  
+                 - secretName:  $(keyVaultSqlConnName)
+                   secretValue: '<secretvalueOverriddenInTemplate>'  #set to random , set secretvalue after app deployment
+              
+
+  - deployment: Storage
+    dependsOn:
+    - Base
+    condition: succeeded('Base')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+          - template: ../Infra/storageAccount.yml
+            parameters:
+              azureSubscriptionName: '${{parameters.serviceConnection}}'
+              resourceGroupName: '$(resourceGroupDevOps)'
+              deployLocation: '$(deployLocation)'
+              storageAccountType: '$(storageAccountKind)'
+              storageAccountName: '$(storageAccountNameApp)' 
+              storageQueueName : '$(storageQueueName)'             
+              componentID: '$(componentID)'
+              subEnvironment: '$(subEnvironment)'
+
+  - deployment: SqlServer
+    dependsOn:
+    - Storage
+    condition: succeeded('Storage')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+          - template: ../Infra/sqlserver.yml
+            parameters:
+              azureSubscriptionName: '${{parameters.serviceConnection}}'
+              resourceGroupName: '$(resourceGroupDevOps)'
+              deployLocation: '$(deployLocation)'
+              componentID: '$(componentID)'
+              subEnvironment: '$(subEnvironment)'
+              sqlServerName: '$(sqlServerName)'
+              sqlAdministratorLogin: '$(sqlAdminLoginId)'
+              sqlAdminLoginPassword: '$(sqlAdminLoginPassword)'
+              sqlServerNameStorageAccountName: '$(storageAccountNameApp)'
+
+  # - deployment: SqlElasticPool
+  #   dependsOn:
+  #   - SqlServer
+  #   condition: succeeded('SqlServer')
+  #   pool:
+  #    vmImage: 'windows-latest'
+  #   environment: ${{parameters.env}}
+  #   strategy:
+  #     runOnce:
+  #       deploy:
+  #         steps:
+  #         - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+  #           displayName: 'Set Environment Variable'
+
+  #         - powershell: |
+  #             $date=$(Get-Date -Format g);
+  #             Write-Host "##vso[task.setvariable variable=creationDate]$date"
+  #           displayName: 'Set Date Tag'
+
+  #         - template: ../Infra/sqlelasticpool.yml
+  #           parameters:
+  #             azureSubscriptionName: '${{parameters.serviceConnection}}'
+  #             resourceGroupName: '$(resourceGroupDevOps)'
+  #             deployLocation: '$(deployLocation)'
+  #             componentID: '$(componentID)'
+  #             subEnvironment: '$(subEnvironment)'
+  #             sqlServerName: '$(sqlServerName)'
+  #             sqlElasticPoolName: '$(sqlElasticPoolName)'
+  #             sqlElasticPoolEdition: '$(sqlElasticPoolEdition)'
+  #             sqlElasticPoolCapacity: '$(sqlElasticPoolCapacity)'
+
+  - deployment: SqlDatabase
+    dependsOn:
+    - SqlServer
+    #- SqlElasticPool
+    condition: succeeded('SqlServer') #and(succeeded('SqlServer')), succeeded('SqlElasticPool'))
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+
+          - template: ../Infra/sqldatabase.yml
+            parameters:
+              azureSubscriptionName: '${{parameters.serviceConnection}}'
+              resourceGroupName: '$(resourceGroupDevOps)'
+              deployLocation: '$(deployLocation)'
+              componentID: '$(componentID)'
+              subEnvironment: '$(subEnvironment)'
+              sqlServerName: '$(sqlServerName)'
+             # sqlElasticPoolName: '$(sqlElasticPoolName)'
+              sqlDbSkuTier: '$(sqlDbSkuTier)'
+              sqldatabases:
+                    - '$(sqlDbprodName)'
+
+  - deployment: FunctionApps
+    dependsOn:
+    - Storage
+    condition: succeeded('Storage')
+    pool:
+      vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+              displayName: "Set Environment Variable"
+            - powershell: |
+                $date=$(Get-Date -Format g);
+                Write-Host "##vso[task.setvariable variable=creationDate]$date"
+              displayName: "Set Date Tag"
+            - template: ../Infra/functionapp.yml
+              parameters:
+                azureSubscriptionName: '${{parameters.serviceConnection}}'
+                resourceGroupName: '$(resourceGroupDevOps)'
+                deployLocation: '$(deployLocation)'
+                componentID: '$(componentID)'
+                subEnvironment: '$(subEnvironment)'
+                functionstorageAccountName: '$(storageAccountNameApp)'
+                funcDevOpsApp: '$(funcDevOpsApp)'
+                funcSPDevOpsApp: '$(funcSPDevOpsApp)'
+  
+  - deployment: WebApps
+    dependsOn:
+    - Base
+    condition: succeeded('Base')
+    pool:
+     vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+            displayName: 'Set Environment Variable'
+          - powershell: |
+              $date=$(Get-Date -Format g);
+              Write-Host "##vso[task.setvariable variable=creationDate]$date"
+            displayName: 'Set Date Tag'
+          - template: ../Infra/webApps.yml
+            parameters:
+              azureSubscriptionName: '${{parameters.serviceConnection}}'
+              resourceGroupName: '$(resourceGroupDevOps)'
+              deployLocation: '$(deployLocation)'
+              componentID: '$(componentID)'
+              subEnvironment: '$(subEnvironment)'
+              webAppName: '$(webAppName)'
+              appServicePlanName : '$(appServicePlanName)'
+              appServicePlanSku : '$(appServicePlanSku)'  
+ 
+
+  - deployment: ApplicationInsightsCreates
+    dependsOn:
+    - WebApps
+    condition: succeeded('WebApps')
+    pool:
+      vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - script: echo '##vso[task.setvariable variable=env]${{parameters.env}}
+              displayName: "Set Environment Variable"
+            - powershell: |
+                $date=$(Get-Date -Format g);
+                Write-Host "##vso[task.setvariable variable=creationDate]$date"
+              displayName: "Set Date Tag"
+            - template: ../Infra/applicationInsights.yml
+              parameters:
+                azureSubscriptionName: '${{parameters.serviceConnection}}'
+                resourceGroupName: '$(resourceGroupDevOps)'
+                deployLocation: '$(deployLocation)'
+                webappappinsightname: '$(webappappinsightname)'
+                componentID: '$(componentID)'
+                subEnvironment: '$(subEnvironment)'
+
+
+  - deployment: IntegrateAppInsight
+    dependsOn:
+    - ApplicationInsightsCreates
+    - WebApps
+    condition: and(succeeded('ApplicationInsightsCreates'), succeeded('WebApps'))
+    pool:
+      vmImage: 'windows-latest'
+    environment: ${{parameters.env}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureCLI@2
+            displayName: Azure CLI
+            inputs:
+                azureSubscription: '${{parameters.serviceConnection}}'
+                scriptType: ps
+                scriptLocation: inlineScript
+                inlineScript: |
+                    $wkey = az resource show -g $(resourceGroupDevOps) -n $(webappappinsightname) --resource-type "Microsoft.Insights/components" --query properties.InstrumentationKey
+                    az webapp config appsettings set -g $(resourceGroupDevOps) -n $(webAppName) --settings APPINSIGHTS_INSTRUMENTATIONKEY=$wkey APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=$wkey ApplicationInsightsAgent_EXTENSION_VERSION=~2
+              
+
+ 

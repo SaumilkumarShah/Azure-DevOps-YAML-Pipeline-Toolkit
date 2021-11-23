@@ -1,0 +1,35 @@
+steps:
+ - task: AzureResourceGroupDeployment@2
+   displayName: Web App - ARM
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     resourceGroupName: "${{ parameters.resourceGroupName }}"
+     location: "${{ parameters.deployLocation }}"
+     csmFile: '$(Agent.BuildDirectory)/Drop/Templates/Web Apps/deploy.json'
+     overrideParameters: '-webAppName "${{ parameters.webAppName }}" -appServicePlanName "${{ parameters.appServicePlanName }}" -appServicePlanSku "${{ parameters.appServicePlanSku }}"'
+     deploymentOutputs: armOut
+
+ - task: AzurePowerShell@4
+   displayName: Add tags to Web App - Web
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Add-Tags.ps1'
+     ScriptArguments: '-resourceType "Primary" -resourcePurpose "" -componentID "${{ parameters.componentID }}" -subEnvironment "${{ parameters.subEnvironment }}" -resourceGroupName "${{ parameters.resourceGroupName }}" -resourceName "${{ parameters.webAppName }}"'
+     azurePowerShellVersion: LatestVersion
+
+ - task: AzurePowerShell@4
+   displayName: Add tags to App Service Plan
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Add-Tags.ps1'
+     ScriptArguments: '-resourceType "Primary" -resourcePurpose "" -componentID "${{ parameters.componentID }}" -subEnvironment "${{ parameters.subEnvironment }}" -resourceGroupName "${{ parameters.resourceGroupName }}" -resourceName "${{ parameters.appServicePlanName }}"'
+     azurePowerShellVersion: LatestVersion
+
+#  - task: AzurePowerShell@4
+#    displayName: Set Build Variable From ARM Output
+#    name: SetWebAppOutputVariable
+#    inputs:
+#      azureSubscription: "${{ parameters.azureSubscriptionName }}"
+#      ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Set-OutputVariable.ps1'
+#      ScriptArguments: '-resourceGroupName "${{ parameters.resourceGroupName }}"'
+#      azurePowerShellVersion: LatestVersion

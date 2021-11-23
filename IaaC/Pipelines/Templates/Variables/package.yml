@@ -1,0 +1,11 @@
+variables:
+- name: filesPath
+  value: ''
+- name: appSolutionPath
+  value: '/Apps/'
+- name: appArtifactsFolder
+  value: 'DropAppArtifacts'
+- name: infraScriptPath
+  value: '/IaaC/Scripts'
+- name: infraTemplatePath
+  value: '/IaaC/Templates'

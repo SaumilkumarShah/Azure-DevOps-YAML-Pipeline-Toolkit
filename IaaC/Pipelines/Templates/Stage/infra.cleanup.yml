@@ -1,0 +1,5 @@
+jobs:
+ - template: ../Deploy/infra.cleanup.yml
+   parameters:
+     env: ${{parameters.env}}
+     serviceConnection : ${{parameters.serviceConnection}}

@@ -1,0 +1,5 @@
+variables:
+- name: componentID
+  value: 'b42f7823-ee31-4206-8388-2fd0f56c34ec'
+- name: subEnvironment
+  value: 'HOTFIX'

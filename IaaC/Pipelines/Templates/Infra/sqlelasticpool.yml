@@ -1,0 +1,18 @@
+steps:
+ - task: AzureResourceGroupDeployment@2
+   displayName: Sql Elastic Pool - ARM
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     resourceGroupName: "${{ parameters.resourceGroupName }}"
+     location: "${{ parameters.deployLocation }}"
+     csmFile: '$(Agent.BuildDirectory)/Drop/Templates/Sql ElasticPool/deploy.json'
+     overrideParameters: '-sqlServerName "${{ parameters.sqlServerName }}" -sqlElasticPoolName "${{ parameters.sqlElasticPoolName }}" -edition "${{ parameters.sqlElasticPoolEdition }}" -capacity "${{ parameters.sqlElasticPoolCapacity }}"'
+     deploymentOutputs: armOut
+
+ - task: AzurePowerShell@4
+   displayName: Add tags to Sql Elastic Pool
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Add-Tags.ps1'
+     ScriptArguments: '-resourceType "Primary" -resourcePurpose "" -componentID "${{ parameters.componentID }}" -subEnvironment "${{ parameters.subEnvironment }}" -resourceGroupName "${{ parameters.resourceGroupName }}" -resourceName "${{ parameters.sqlElasticPoolName }}"'
+     azurePowerShellVersion: LatestVersion

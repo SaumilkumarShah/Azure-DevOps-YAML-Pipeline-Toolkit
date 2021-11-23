@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlservername": {
+      "value": "sql-qrstest"
+    },
+    "resourcelocation": {
+      "value": "East US"
+    },
+    "sqlElasticPoolName": {
+      "value": "sqlel-qrstest"
+    },
+    "databases": {
+      "value": []
+    },
+    "edition": {
+      "value": "Basic"
+    },
+    "capacity": {
+      "value": 50
+    },
+    "databaseCapacityMin": {
+      "value": 0
+    },
+    "databaseCapacityMax": {
+      "value": 5
+    },
+    "databaseCollation": {
+      "value": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "zoonreductant": {
+      "value": false
+    },
+    "license": {
+      "value": "LicenseIncluded"
+    }
+  }
+}

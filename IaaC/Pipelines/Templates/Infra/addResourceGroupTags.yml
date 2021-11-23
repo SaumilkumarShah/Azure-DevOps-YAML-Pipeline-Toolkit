@@ -1,0 +1,8 @@
+steps:
+ - task: AzurePowerShell@4
+   displayName: Add tags to Resource Group
+   inputs:
+     azureSubscription: "${{ parameters.azureSubscriptionName }}"
+     ScriptPath: '$(Agent.BuildDirectory)/Drop/Scripts/Add-ResourceGroup-Tags.ps1'
+     ScriptArguments: '-componentID "${{ parameters.componentID }}" -resourceGroupName "${{ parameters.resourceGroupName }}"'
+     azurePowerShellVersion: LatestVersion
