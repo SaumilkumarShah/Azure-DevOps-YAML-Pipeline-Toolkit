@@ -16,5 +16,4 @@ Pipelines-as-code with more capabilities and easy replication for new environmen
 Automation of Infrastructure and code CI/CD hand-in hand for changes on each environment.
 More details can be found in the following documents:
 
-**Azure devops IPkit(Draft).pptx <br>**
-**DevOps.zip **
+**Azure devops IPkit(Draft).pptx**
